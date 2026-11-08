@@ -1,0 +1,1077 @@
+<!DOCTYPE html>
+<html lang="id" class="dark">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Ballon d'Or & Puskas Award Real-Time Hub</title>
+
+    <!-- Tailwind CSS CDN -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = {
+            darkMode: 'class',
+            theme: {
+                extend: {
+                    colors: {
+                        obsidian: {
+                            950: '#060709',
+                            900: '#0b0d12',
+                            800: '#131722',
+                            700: '#1c2232',
+                            600: '#273046'
+                        },
+                        gold: {
+                            300: '#ffe885',
+                            400: '#f7d047',
+                            500: '#d4af37',
+                            600: '#aa820a',
+                            700: '#7e5e04'
+                        }
+                    },
+                    fontFamily: {
+                        sans: ['Inter', 'sans-serif']
+                    }
+                }
+            }
+        }
+    </script>
+
+    <!-- Font Awesome 6 Icons -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    
+    <!-- Google Fonts Inter -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&display=swap" rel="stylesheet">
+
+    <!-- Firebase Compat SDKs -->
+    <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-database-compat.js"></script>
+
+    <style>
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: #060709;
+            color: #e2e8f0;
+            user-select: none;
+        }
+
+        .text-gold-gradient {
+            background: linear-gradient(135deg, #fff3a1 0%, #d4af37 50%, #aa820a 100%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+
+        .bg-gold-gradient {
+            background: linear-gradient(135deg, #ffe885 0%, #d4af37 70%, #aa820a 100%);
+        }
+
+        /* Rank 1: Golden Aura Glow Animation */
+        @keyframes goldenPulse {
+            0%, 100% {
+                box-shadow: 0 0 15px rgba(212, 175, 55, 0.4), inset 0 0 10px rgba(212, 175, 55, 0.2);
+                border-color: rgba(247, 208, 71, 0.9);
+            }
+            50% {
+                box-shadow: 0 0 30px rgba(247, 208, 71, 0.8), inset 0 0 20px rgba(255, 232, 133, 0.4);
+                border-color: rgba(255, 232, 133, 1);
+            }
+        }
+        .rank-1-card {
+            animation: goldenPulse 3s infinite ease-in-out;
+            background: linear-gradient(135deg, rgba(212, 175, 55, 0.15) 0%, rgba(11, 13, 18, 0.95) 70%);
+        }
+
+        /* Rank 2: Silver Metallic Shine */
+        .rank-2-card {
+            border-color: rgba(203, 213, 225, 0.7);
+            box-shadow: 0 0 15px rgba(148, 163, 184, 0.2);
+            background: linear-gradient(135deg, rgba(148, 163, 184, 0.12) 0%, rgba(11, 13, 18, 0.95) 70%);
+        }
+
+        /* Rank 3: Bronze Metallic Glow */
+        .rank-3-card {
+            border-color: rgba(217, 119, 6, 0.7);
+            box-shadow: 0 0 15px rgba(180, 83, 9, 0.2);
+            background: linear-gradient(135deg, rgba(180, 83, 9, 0.15) 0%, rgba(11, 13, 18, 0.95) 70%);
+        }
+
+        ::-webkit-scrollbar { width: 6px; height: 6px; }
+        ::-webkit-scrollbar-track { background: #0b0d12; }
+        ::-webkit-scrollbar-thumb { background: #273046; border-radius: 4px; }
+        ::-webkit-scrollbar-thumb:hover { background: #d4af37; }
+    </style>
+</head>
+<body class="min-h-screen flex flex-col justify-between selection:bg-gold-500 selection:text-black">
+
+    <!-- MAIN APP WRAPPER -->
+    <div class="flex-1 flex flex-col">
+
+        <!-- HEADER SECTION -->
+        <header class="sticky top-0 z-40 bg-obsidian-900/95 backdrop-blur-md border-b border-gold-500/20 px-4 py-3 shadow-xl">
+            <div class="max-w-6xl mx-auto flex flex-wrap items-center justify-between gap-3">
+                <!-- Logo & Title -->
+                <div class="flex items-center gap-3">
+                    <div class="w-11 h-11 rounded-2xl bg-gold-gradient flex items-center justify-center text-obsidian-950 shadow-lg shadow-gold-500/20 border border-gold-300/50">
+                        <i class="fa-solid fa-trophy text-xl"></i>
+                    </div>
+                    <div>
+                        <h1 class="font-black text-base sm:text-xl tracking-wider text-gold-gradient uppercase leading-none">
+                            Ballon d'Or & Puskas Hub
+                        </h1>
+                        <div class="flex items-center gap-2 mt-1">
+                            <span id="firebaseStatus" class="inline-flex items-center gap-1.5 px-2 py-0.5 rounded-full text-[10px] font-bold bg-emerald-950/80 text-emerald-400 border border-emerald-500/40">
+                                <span class="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse"></span>
+                                Live Sync Active
+                            </span>
+                            <span class="text-[10px] text-slate-400 font-medium hidden sm:inline">• Official Klasemen & Voting</span>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- WIB Clock & Date -->
+                <div class="flex items-center gap-2">
+                    <div class="bg-obsidian-800 border border-gold-500/20 px-3.5 py-1.5 rounded-xl text-right shadow-inner">
+                        <div id="liveDateWib" class="text-[10px] font-semibold text-gold-400 tracking-wide">Loading...</div>
+                        <div id="liveClockWib" class="text-xs sm:text-sm font-black tracking-widest text-white">
+                            00:00:00 <span class="text-[9px] text-gold-500">WIB</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </header>
+
+        <!-- MAIN CONTENT AREA -->
+        <main class="max-w-5xl mx-auto w-full px-4 py-6 flex-1 pb-24">
+
+            <!-- TAB 1: KLASEMEN (BALLON D'OR & PUSKAS) -->
+            <section id="tab-klasemen" class="tab-content space-y-6">
+                
+                <!-- Sub-nav Switcher: Ballon d'Or vs Puskas -->
+                <div class="flex items-center justify-between border-b border-slate-800 pb-3 flex-wrap gap-3">
+                    <div class="flex bg-obsidian-800 p-1 rounded-xl border border-slate-700/60">
+                        <button onclick="toggleAwardMode('ballondor')" id="btnAwardBallondor" class="px-4 py-2 rounded-lg text-xs font-bold transition flex items-center gap-2 text-gold-400 bg-gold-500/10 border border-gold-500/30">
+                            <i class="fa-solid fa-futbol text-gold-400"></i> Ballon d'Or 2026
+                        </button>
+                        <button onclick="toggleAwardMode('puskas')" id="btnAwardPuskas" class="px-4 py-2 rounded-lg text-xs font-bold transition flex items-center gap-2 text-slate-400 hover:text-white">
+                            <i class="fa-solid fa-award"></i> Puskas Award
+                        </button>
+                    </div>
+
+                    <!-- Daily Vote Quota Counter -->
+                    <div id="voteQuotaBadge" class="hidden items-center gap-2 bg-obsidian-800 border border-gold-500/30 px-3 py-1.5 rounded-xl text-xs">
+                        <i class="fa-solid fa-fire text-amber-400"></i>
+                        <span class="text-slate-300 text-[11px]">Sisa Vote Hari Ini:</span>
+                        <span id="voteQuotaCount" class="font-extrabold text-gold-400 bg-gold-500/20 px-2 py-0.5 rounded-md">3 / 3</span>
+                    </div>
+                </div>
+
+                <!-- BALLON D'OR CONTAINER -->
+                <div id="sectionBallondor" class="space-y-4">
+                    <div class="bg-obsidian-800/80 border border-gold-500/20 rounded-2xl p-4 flex items-center justify-between">
+                        <div>
+                            <h2 class="text-lg font-bold text-white flex items-center gap-2">
+                                <i class="fa-solid fa-crown text-gold-400"></i> Peringkat Kandidat Ballon d'Or
+                            </h2>
+                            <p class="text-xs text-slate-400">Diperbarui secara real-time berdasarkan performa & voting resmi.</p>
+                        </div>
+                        <span class="text-xs bg-gold-500/10 text-gold-400 font-bold px-3 py-1 rounded-lg border border-gold-500/30">Official Points</span>
+                    </div>
+
+                    <!-- Dynamic List of Ballon d'Or Candidates -->
+                    <div id="ballondorList" class="space-y-3">
+                        <!-- Populated dynamically via JS -->
+                    </div>
+                </div>
+
+                <!-- PUSKAS CONTAINER -->
+                <div id="sectionPuskas" class="space-y-4 hidden">
+                    <div class="bg-obsidian-800/80 border border-gold-500/20 rounded-2xl p-4 flex items-center justify-between">
+                        <div>
+                            <h2 class="text-lg font-bold text-white flex items-center gap-2">
+                                <i class="fa-solid fa-award text-gold-400"></i> Nominasi Gol Terbaik Puskas
+                            </h2>
+                            <p class="text-xs text-slate-400">Gunakan jatah 3 vote harianmu sebelum di-reset pukul 00:00 WIB.</p>
+                        </div>
+                        <span class="text-xs bg-amber-500/10 text-amber-400 font-bold px-3 py-1 rounded-lg border border-amber-500/30">Free Voting</span>
+                    </div>
+
+                    <!-- Dynamic Grid of Puskas Candidates -->
+                    <div id="puskasGrid" class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        <!-- Populated dynamically via JS -->
+                    </div>
+                </div>
+
+            </section>
+
+
+            <!-- TAB 2: ATURAN & KRITERIA -->
+            <section id="tab-aturan" class="tab-content hidden space-y-6">
+                <div class="bg-obsidian-800 border border-gold-500/30 rounded-3xl p-6 shadow-xl relative overflow-hidden">
+                    <div class="absolute -right-10 -top-10 w-40 h-40 bg-gold-500/5 rounded-full blur-2xl pointer-events-none"></div>
+
+                    <div class="flex items-center gap-3 border-b border-slate-700/60 pb-4 mb-6">
+                        <div class="w-12 h-12 rounded-2xl bg-gold-gradient flex items-center justify-center text-obsidian-950 text-2xl font-black">
+                            <i class="fa-solid fa-scroll"></i>
+                        </div>
+                        <div>
+                            <h2 class="text-xl font-black text-gold-gradient uppercase tracking-wide">Aturan & Kriteria Resmi</h2>
+                            <p class="text-xs text-slate-400">Standar Penilaian Ballon d'Or & Puskas Award 2026</p>
+                        </div>
+                    </div>
+
+                    <!-- Content Cards -->
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                        
+                        <!-- Puskas Award Rules -->
+                        <div class="bg-obsidian-900 border border-slate-800 rounded-2xl p-5 space-y-4">
+                            <h3 class="text-base font-bold text-amber-400 flex items-center gap-2 border-b border-slate-800 pb-2">
+                                <i class="fa-solid fa-award text-amber-500"></i> Kriteria Gol Puskas Award
+                            </h3>
+                            <ul class="space-y-3 text-xs text-slate-300">
+                                <li class="flex items-start gap-2.5">
+                                    <i class="fa-solid fa-check-circle text-gold-400 mt-0.5"></i>
+                                    <span><strong>Estetika & Keindahan:</strong> Gol harus memiliki tingkat kesulitan tinggi, teknik akrobatik, tendangan jarak jauh instingtif, atau skema serangan luar biasa.</span>
+                                </li>
+                                <li class="flex items-start gap-2.5">
+                                    <i class="fa-solid fa-check-circle text-gold-400 mt-0.5"></i>
+                                    <span><strong>Pentingnya Laga:</strong> Nilai tambah diberikan untuk gol yang dicetak pada laga krusial (Derby, Final, atau Turnamen Resmi).</span>
+                                </li>
+                                <li class="flex items-start gap-2.5">
+                                    <i class="fa-solid fa-check-circle text-gold-400 mt-0.5"></i>
+                                    <span><strong>Fair Play & Keabsahan:</strong> Gol dibuat tanpa unsur keberuntungan yang disengaja akibat kesalahan fatal kiper atau pelanggaran teknis.</span>
+                                </li>
+                                <li class="flex items-start gap-2.5">
+                                    <i class="fa-solid fa-check-circle text-gold-400 mt-0.5"></i>
+                                    <span><strong>Sistem Voting Harian:</strong> Setiap pengunjung mendapatkan kuota <strong>3 Free Daily Votes</strong>. Jatah voting di-reset otomatis setiap hari pukul <strong>00:00 WIB</strong>.</span>
+                                </li>
+                            </ul>
+                        </div>
+
+                        <!-- Ballon d'Or Rules -->
+                        <div class="bg-obsidian-900 border border-slate-800 rounded-2xl p-5 space-y-4">
+                            <h3 class="text-base font-bold text-gold-400 flex items-center gap-2 border-b border-slate-800 pb-2">
+                                <i class="fa-solid fa-trophy text-gold-500"></i> Kriteria Ballon d'Or
+                            </h3>
+                            <ul class="space-y-3 text-xs text-slate-300">
+                                <li class="flex items-start gap-2.5">
+                                    <i class="fa-solid fa-star text-gold-400 mt-0.5"></i>
+                                    <span><strong>Performa Individu:</strong> Konsistensi ketajaman gol, assist, momen penentu kemenangan, serta performa luar biasa sepanjang musim kompetisi.</span>
+                                </li>
+                                <li class="flex items-start gap-2.5">
+                                    <i class="fa-solid fa-star text-gold-400 mt-0.5"></i>
+                                    <span><strong>Prestasi Kolektif (Trophy Count):</strong> Raihan trofi bersama Klub (Liga Domestik, Liga Champions) serta Tim Nasional.</span>
+                                </li>
+                                <li class="flex items-start gap-2.5">
+                                    <i class="fa-solid fa-star text-gold-400 mt-0.5"></i>
+                                    <span><strong>Kelas & Fair Play:</strong> Kepemimpinan di lapangan, keteladanan olahraga, serta respek antarpemain.</span>
+                                </li>
+                                <li class="flex items-start gap-2.5">
+                                    <i class="fa-solid fa-star text-gold-400 mt-0.5"></i>
+                                    <span><strong>Real-Time Update:</strong> Poin akumulasi dikelola langsung melalui Dev Panel yang terverifikasi secara akurat.</span>
+                                </li>
+                            </ul>
+                        </div>
+
+                    </div>
+                </div>
+            </section>
+
+
+            <!-- TAB 3: DEV PANEL (ADMINISTRATION) -->
+            <section id="tab-dev" class="tab-content hidden space-y-6">
+                
+                <!-- Unlocked Dev Content -->
+                <div class="bg-obsidian-800 border border-gold-500/30 rounded-3xl p-6 shadow-2xl space-y-6">
+                    <div class="flex items-center justify-between border-b border-slate-700/60 pb-4 flex-wrap gap-3">
+                        <div class="flex items-center gap-3">
+                            <div class="w-10 h-10 rounded-xl bg-red-500/10 border border-red-500/30 text-red-400 flex items-center justify-center font-bold">
+                                <i class="fa-solid fa-wrench text-lg"></i>
+                            </div>
+                            <div>
+                                <h2 class="text-lg font-bold text-white">Dev Panel - Administrator</h2>
+                                <p class="text-xs text-slate-400">Manajemen Pemain, Poin Ballon d'Or & Voting Puskas Real-Time</p>
+                            </div>
+                        </div>
+                        <button onclick="lockDevPanel()" class="bg-obsidian-900 hover:bg-slate-800 text-slate-400 hover:text-white px-3 py-1.5 rounded-xl border border-slate-700 text-xs font-semibold transition">
+                            <i class="fa-solid fa-lock mr-1"></i> Kunci Kembali
+                        </button>
+                    </div>
+
+                    <!-- FORM TAMBAH PEMAIN / NOMINASI -->
+                    <div class="bg-obsidian-900 border border-slate-800 rounded-2xl p-5 space-y-4">
+                        <h3 class="text-sm font-bold text-gold-400 uppercase tracking-wider flex items-center gap-2">
+                            <i class="fa-solid fa-user-plus"></i> Form Tambah Kandidat Baru
+                        </h3>
+                        <form id="addPlayerForm" onsubmit="handleAddPlayer(event)" class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-3">
+                            <div>
+                                <label class="block text-[11px] font-semibold text-slate-400 mb-1">Kategori</label>
+                                <select id="formCategory" onchange="toggleFormInputs()" class="w-full bg-obsidian-800 border border-slate-700 rounded-xl px-3 py-2 text-xs text-white focus:outline-none focus:border-gold-500">
+                                    <option value="ballondor">Ballon d'Or</option>
+                                    <option value="puskas">Puskas Award</option>
+                                </select>
+                            </div>
+
+                            <div>
+                                <label class="block text-[11px] font-semibold text-slate-400 mb-1">Nama Pemain</label>
+                                <input type="text" id="formName" required placeholder="Contoh: Jude Bellingham" class="w-full bg-obsidian-800 border border-slate-700 rounded-xl px-3 py-2 text-xs text-white focus:outline-none focus:border-gold-500">
+                            </div>
+
+                            <div>
+                                <label class="block text-[11px] font-semibold text-slate-400 mb-1">Pilih Liga</label>
+                                <select id="formLeague" onchange="updateClubOptions()" class="w-full bg-obsidian-800 border border-slate-700 rounded-xl px-3 py-2 text-xs text-white focus:outline-none focus:border-gold-500">
+                                    <!-- Dynamic League Options -->
+                                </select>
+                            </div>
+
+                            <div>
+                                <label class="block text-[11px] font-semibold text-slate-400 mb-1">Pilih Klub</label>
+                                <select id="formClub" class="w-full bg-obsidian-800 border border-slate-700 rounded-xl px-3 py-2 text-xs text-white focus:outline-none focus:border-gold-500">
+                                    <!-- Dynamic Club Options -->
+                                </select>
+                            </div>
+
+                            <!-- Additional Detail for Puskas Goal description -->
+                            <div id="puskasGoalDetailContainer" class="sm:col-span-2 md:col-span-3 hidden">
+                                <label class="block text-[11px] font-semibold text-slate-400 mb-1">Deskripsi Gol Puskas</label>
+                                <input type="text" id="formGoalDesc" placeholder="Contoh: Tendangan Salto Akrobatik vs Barcelona" class="w-full bg-obsidian-800 border border-slate-700 rounded-xl px-3 py-2 text-xs text-white focus:outline-none focus:border-gold-500">
+                            </div>
+
+                            <div class="sm:col-span-2 md:col-span-1 flex items-end">
+                                <button type="submit" class="w-full bg-gold-gradient hover:opacity-90 text-obsidian-950 font-black py-2.5 rounded-xl text-xs transition shadow-lg shadow-gold-500/20">
+                                    <i class="fa-solid fa-plus mr-1"></i> Simpan Data
+                                </button>
+                            </div>
+                        </form>
+                    </div>
+
+                    <!-- TABEL MANAJEMEN & SEARCH BAR -->
+                    <div class="space-y-4">
+                        <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-3 bg-obsidian-900 p-3 rounded-2xl border border-slate-800">
+                            <h3 class="text-sm font-bold text-white flex items-center gap-2">
+                                <i class="fa-solid fa-list-check text-gold-400"></i> Kelola Poin & Voting
+                            </h3>
+                            
+                            <!-- Search Filter Input -->
+                            <div class="relative w-full sm:w-64">
+                                <i class="fa-solid fa-magnifying-glass absolute left-3 top-2.5 text-xs text-slate-400"></i>
+                                <input type="text" id="devSearchInput" oninput="filterDevTable()" placeholder="Cari nama pemain..." class="w-full bg-obsidian-800 border border-slate-700 rounded-xl pl-9 pr-3 py-1.5 text-xs text-white focus:outline-none focus:border-gold-500">
+                            </div>
+                        </div>
+
+                        <!-- Data Table -->
+                        <div class="overflow-x-auto border border-slate-800 rounded-2xl">
+                            <table class="w-full text-left border-collapse">
+                                <thead>
+                                    <tr class="bg-obsidian-900 border-b border-slate-800 text-[11px] text-slate-400 font-bold uppercase tracking-wider">
+                                        <th class="p-3">Kategori</th>
+                                        <th class="p-3">Nama & Klub</th>
+                                        <th class="p-3 text-center">Poin / Vote Saat Ini</th>
+                                        <th class="p-3 text-center">Aksi Pengeditan Cepat</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="devTableBody" class="divide-y divide-slate-800/60 text-xs">
+                                    <!-- Populated by JS -->
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+
+                </div>
+
+            </section>
+
+        </main>
+
+        <!-- FOOTER SIGNATURE -->
+        <footer class="mt-auto border-t border-slate-800/80 bg-obsidian-900 py-4 px-4 text-center">
+            <div class="max-w-5xl mx-auto flex flex-col sm:flex-row items-center justify-between gap-2 text-xs text-slate-500 font-semibold tracking-wider">
+                <span>© 2026 Ballon d'Or & Puskas Award Hub</span>
+                <span class="text-gold-400 font-extrabold tracking-[0.2em] uppercase bg-gold-500/10 border border-gold-500/20 px-3 py-1 rounded-xl">
+                    Karya By JokoProject
+                </span>
+            </div>
+        </footer>
+
+        <!-- BOTTOM FIXED NAVIGATION -->
+        <nav class="fixed bottom-0 left-0 right-0 z-40 bg-obsidian-900/95 backdrop-blur-lg border-t border-gold-500/20 px-4 py-2">
+            <div class="max-w-md mx-auto grid grid-cols-3 gap-2">
+                <button onclick="switchTab('klasemen')" id="nav-klasemen" class="nav-btn flex flex-col items-center justify-center py-2 rounded-xl transition text-gold-400 bg-gold-500/10 border border-gold-500/30">
+                    <i class="fa-solid fa-trophy text-base mb-1"></i>
+                    <span class="text-[10px] font-bold">Klasemen</span>
+                </button>
+                <button onclick="switchTab('aturan')" id="nav-aturan" class="nav-btn flex flex-col items-center justify-center py-2 rounded-xl transition text-slate-400 hover:text-white">
+                    <i class="fa-solid fa-scroll text-base mb-1"></i>
+                    <span class="text-[10px] font-bold">Aturan</span>
+                </button>
+                <button onclick="switchTab('dev')" id="nav-dev" class="nav-btn flex flex-col items-center justify-center py-2 rounded-xl transition text-slate-400 hover:text-white">
+                    <i class="fa-solid fa-wrench text-base mb-1"></i>
+                    <span class="text-[10px] font-bold">Dev Panel</span>
+                </button>
+            </div>
+        </nav>
+
+    </div>
+
+    <!-- PIN SECURITY MODAL FOR DEV PANEL -->
+    <div id="pinModal" class="fixed inset-0 z-50 bg-black/85 backdrop-blur-sm flex items-center justify-center p-4 hidden">
+        <div class="bg-obsidian-800 border border-gold-500/40 w-full max-w-sm rounded-3xl p-6 text-center shadow-2xl relative">
+            <div class="w-14 h-14 rounded-2xl bg-gold-500/10 border border-gold-500/30 text-gold-400 flex items-center justify-center mx-auto text-2xl mb-4 shadow-lg shadow-gold-500/10">
+                <i class="fa-solid fa-shield-halved"></i>
+            </div>
+            <h3 class="text-lg font-black text-white mb-1">Keamanan Dev Panel</h3>
+            <p class="text-xs text-slate-400 mb-5">Masukkan Kode PIN Admin untuk mengakses pengeditan poin & pemain.</p>
+            
+            <form onsubmit="verifyPin(event)" class="space-y-4">
+                <div>
+                    <input type="password" id="pinInput" placeholder="Masukkan PIN" required class="w-full bg-obsidian-900 border border-slate-700 focus:border-gold-500 rounded-xl px-4 py-3 text-center text-xl tracking-[0.3em] font-bold text-white focus:outline-none shadow-inner">
+                </div>
+                <p id="pinErrorMsg" class="text-xs font-bold text-red-400 hidden">
+                    <i class="fa-solid fa-triangle-exclamation mr-1"></i> PIN Salah! Akses ditolak.
+                </p>
+                
+                <div class="flex gap-2 pt-2">
+                    <button type="button" onclick="closePinModal()" class="w-1/2 bg-obsidian-900 hover:bg-slate-800 text-slate-300 py-2.5 rounded-xl text-xs font-bold transition border border-slate-700">
+                        Batal
+                    </button>
+                    <button type="submit" class="w-1/2 bg-gold-gradient text-obsidian-950 font-extrabold py-2.5 rounded-xl text-xs transition shadow-lg shadow-gold-500/20">
+                        Buka Kunci
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- DELETE CONFIRMATION MODAL -->
+    <div id="deleteModal" class="fixed inset-0 z-50 bg-black/85 backdrop-blur-sm flex items-center justify-center p-4 hidden">
+        <div class="bg-obsidian-800 border border-red-500/40 w-full max-w-sm rounded-3xl p-6 text-center shadow-2xl relative">
+            <div class="w-14 h-14 rounded-2xl bg-red-500/10 border border-red-500/30 text-red-400 flex items-center justify-center mx-auto text-2xl mb-4 shadow-lg shadow-red-500/10">
+                <i class="fa-solid fa-trash-can"></i>
+            </div>
+            <h3 class="text-lg font-black text-white mb-2">Hapus Pemain?</h3>
+            <p id="deleteConfirmText" class="text-xs text-slate-300 mb-6 leading-relaxed">Apakah Anda yakin ingin menghapus data pemain ini?</p>
+            <div class="flex gap-2">
+                <button type="button" onclick="closeDeleteModal()" class="w-1/2 bg-obsidian-900 hover:bg-slate-800 text-slate-300 py-2.5 rounded-xl text-xs font-bold transition border border-slate-700">
+                    Batal
+                </button>
+                <button type="button" onclick="confirmDeletePlayer()" class="w-1/2 bg-red-600 hover:bg-red-500 text-white font-extrabold py-2.5 rounded-xl text-xs transition shadow-lg shadow-red-600/30">
+                    Hapus Data
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- EDIT SCORE MODAL -->
+    <div id="editScoreModal" class="fixed inset-0 z-50 bg-black/85 backdrop-blur-sm flex items-center justify-center p-4 hidden">
+        <div class="bg-obsidian-800 border border-gold-500/40 w-full max-w-sm rounded-3xl p-6 text-center shadow-2xl relative">
+            <div class="w-14 h-14 rounded-2xl bg-gold-500/10 border border-gold-500/30 text-gold-400 flex items-center justify-center mx-auto text-2xl mb-4 shadow-lg shadow-gold-500/10">
+                <i class="fa-solid fa-pen-to-square"></i>
+            </div>
+            <h3 id="editScoreModalTitle" class="text-lg font-black text-white mb-1">Edit Nilai</h3>
+            <p class="text-xs text-slate-400 mb-5">Masukkan nilai poin/vote terbaru untuk kandidat ini.</p>
+            <form onsubmit="confirmEditScore(event)" class="space-y-4">
+                <div>
+                    <input type="number" id="editScoreInput" min="0" required class="w-full bg-obsidian-900 border border-slate-700 focus:border-gold-500 rounded-xl px-4 py-3 text-center text-xl font-bold text-white focus:outline-none shadow-inner">
+                </div>
+                <div class="flex gap-2 pt-2">
+                    <button type="button" onclick="closeEditScoreModal()" class="w-1/2 bg-obsidian-900 hover:bg-slate-800 text-slate-300 py-2.5 rounded-xl text-xs font-bold transition border border-slate-700">
+                        Batal
+                    </button>
+                    <button type="submit" class="w-1/2 bg-gold-gradient text-obsidian-950 font-extrabold py-2.5 rounded-xl text-xs transition shadow-lg shadow-gold-500/20">
+                        Simpan Nilai
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- NOTIFICATION TOAST -->
+    <div id="toast" class="fixed bottom-24 left-1/2 -translate-x-1/2 z-50 bg-obsidian-800 border border-gold-500/40 text-gold-300 px-5 py-2.5 rounded-2xl shadow-2xl text-xs font-bold flex items-center gap-2 opacity-0 pointer-events-none transition-all duration-300">
+        <i id="toastIcon" class="fa-solid fa-circle-check text-gold-400"></i>
+        <span id="toastMsg">Pesan Notifikasi</span>
+    </div>
+
+    <!-- APPLICATION JAVASCRIPT -->
+    <script>
+        // FIREBASE CONFIGURATION
+        const firebaseConfig = {
+            apiKey: "AIzaSyDcKnxonHRnxnsVAVVKBkHk2E-1LdKhznw",
+            authDomain: "ballondor-puskas-hub.firebaseapp.com",
+            databaseURL: "https://ballondor-puskas-hub-default-rtdb.asia-southeast1.firebasedatabase.app",
+            projectId: "ballondor-puskas-hub",
+            storageBucket: "ballondor-puskas-hub.firebasestorage.app",
+            messagingSenderId: "1050596236624",
+            appId: "1:1050596236624:web:9cd5b9c355bf29967a6855"
+        };
+
+        if (!firebase.apps.length) {
+            firebase.initializeApp(firebaseConfig);
+        }
+        const db = firebase.database();
+
+        // COMPREHENSIVE LEAGUE & CLUB DATABASE DATA
+        const LEAGUE_CLUBS = {
+            "Premier League": ["Manchester City", "Arsenal", "Liverpool", "Chelsea", "Manchester United", "Tottenham Hotspur", "Aston Villa", "Newcastle United"],
+            "La Liga": ["Real Madrid", "FC Barcelona", "Atletico Madrid", "Athletic Bilbao", "Real Sociedad", "Girona FC", "Villarreal CF", "Sevilla FC"],
+            "Serie A": ["Inter Milan", "AC Milan", "Juventus", "Atalanta", "AS Roma", "SSC Napoli", "SS Lazio", "Fiorentina"],
+            "Bundesliga": ["Bayern Munich", "Bayer Leverkusen", "Borussia Dortmund", "RB Leipzig", "Eintracht Frankfurt", "VfB Stuttgart"],
+            "Ligue 1": ["Paris Saint-Germain", "AS Monaco", "Olympique Marseille", "LOSC Lille", "Olympique Lyon"],
+            "Saudi Pro League": ["Al-Nassr", "Al-Hilal", "Al-Ittihad", "Al-Ahli"],
+            "MLS": ["Inter Miami CF", "LA Galaxy", "Columbus Crew", "LAFC"],
+            "BRI Liga 1": ["Persib Bandung", "Persija Jakarta", "Persebaya Surabaya", "Arema FC", "Bali United", "PSM Makassar", "Borneo FC"]
+        };
+
+        // INITIAL PLAYERS DATA (Empty arrays for fresh app start)
+        const DEFAULT_BALLONDOR = [];
+        const DEFAULT_PUSKAS = [];
+
+        // STATE VARIABLES
+        let ballondorData = [];
+        let puskasData = [];
+        let isDevUnlocked = false;
+        let currentAwardTab = 'ballondor';
+        let deleteTarget = { type: null, id: null, name: null };
+        let editTarget = { type: null, id: null, currentVal: 0 };
+
+        // INITIALIZATION ON WINDOW LOAD
+        window.onload = function() {
+            initClock();
+            initFormSelects();
+            initFirebaseListeners();
+            initDailyVoteQuota();
+        };
+
+        // REAL-TIME WIB CLOCK
+        function initClock() {
+            setInterval(() => {
+                const now = new Date();
+                const wibTime = new Date(now.getTime() + (now.getTimezoneOffset() * 60000) + (3600000 * 7));
+                
+                const dateOptions = { weekday: 'long', year: 'numeric', month: 'short', day: 'numeric' };
+                document.getElementById('liveDateWib').innerText = wibTime.toLocaleDateString('id-ID', dateOptions);
+                
+                const hrs = String(wibTime.getHours()).padStart(2, '0');
+                const mins = String(wibTime.getMinutes()).padStart(2, '0');
+                const secs = String(wibTime.getSeconds()).padStart(2, '0');
+                document.getElementById('liveClockWib').innerHTML = `${hrs}:${mins}:${secs} <span class="text-[9px] text-gold-500">WIB</span>`;
+            }, 1000);
+        }
+
+        // INITIALIZE DYNAMIC FORM SELECTORS
+        function initFormSelects() {
+            const leagueSelect = document.getElementById('formLeague');
+            leagueSelect.innerHTML = '';
+            for (let league in LEAGUE_CLUBS) {
+                const opt = document.createElement('option');
+                opt.value = league;
+                opt.innerText = league;
+                leagueSelect.appendChild(opt);
+            }
+            updateClubOptions();
+        }
+
+        function updateClubOptions() {
+            const selectedLeague = document.getElementById('formLeague').value;
+            const clubSelect = document.getElementById('formClub');
+            clubSelect.innerHTML = '';
+
+            const clubs = LEAGUE_CLUBS[selectedLeague] || [];
+            clubs.forEach(club => {
+                const opt = document.createElement('option');
+                opt.value = club;
+                opt.innerText = club;
+                clubSelect.appendChild(opt);
+            });
+        }
+
+        function toggleFormInputs() {
+            const cat = document.getElementById('formCategory').value;
+            const container = document.getElementById('puskasGoalDetailContainer');
+            if (cat === 'puskas') {
+                container.classList.remove('hidden');
+            } else {
+                container.classList.add('hidden');
+            }
+        }
+
+        // FIREBASE REAL-TIME LISTENERS
+        function initFirebaseListeners() {
+            // Listen to Ballon d'Or candidates
+            db.ref('ballondor').on('value', snapshot => {
+                const val = snapshot.val();
+                if (val) {
+                    ballondorData = Object.keys(val).map(key => ({ id: key, ...val[key] }));
+                } else {
+                    ballondorData = [];
+                }
+                ballondorData.sort((a, b) => b.points - a.points);
+                renderBallondorUI();
+                renderDevTable();
+            });
+
+            // Listen to Puskas candidates
+            db.ref('puskas').on('value', snapshot => {
+                const val = snapshot.val();
+                if (val) {
+                    puskasData = Object.keys(val).map(key => ({ id: key, ...val[key] }));
+                } else {
+                    puskasData = [];
+                }
+                puskasData.sort((a, b) => b.votes - a.votes);
+                renderPuskasUI();
+                renderDevTable();
+            });
+        }
+
+        // GET INITIALS FOR AVATAR
+        function getInitials(name) {
+            if (!name) return "FC";
+            const parts = name.trim().split(" ");
+            if (parts.length >= 2) return (parts[0][0] + parts[1][0]).toUpperCase();
+            return name.slice(0, 2).toUpperCase();
+        }
+
+        // RENDER BALLON D'OR CARDS (WITH TOP 3 SPECIAL STYLING)
+        function renderBallondorUI() {
+            const container = document.getElementById('ballondorList');
+            container.innerHTML = '';
+
+            if (ballondorData.length === 0) {
+                container.innerHTML = `
+                    <div class="bg-obsidian-800/60 border border-slate-800/80 rounded-2xl p-8 text-center space-y-3">
+                        <div class="w-12 h-12 rounded-2xl bg-gold-500/10 border border-gold-500/20 text-gold-400 flex items-center justify-center mx-auto text-xl">
+                            <i class="fa-solid fa-trophy"></i>
+                        </div>
+                        <h4 class="text-sm font-bold text-white">Belum Ada Pemain Ballon d'Or</h4>
+                        <p class="text-xs text-slate-400 max-w-sm mx-auto">Daftar kandidat Ballon d'Or masih kosong. Tambahkan pemain baru melalui <strong class="text-gold-400">Dev Panel</strong>.</p>
+                    </div>
+                `;
+                return;
+            }
+
+            ballondorData.forEach((player, index) => {
+                const rank = index + 1;
+                let cardClass = "bg-obsidian-800 border border-slate-800 rounded-2xl p-4 flex items-center justify-between gap-4 transition hover:border-slate-700";
+                let rankBadge = `<div class="w-8 h-8 rounded-xl bg-obsidian-900 border border-slate-700 text-slate-300 font-extrabold text-xs flex items-center justify-center">${rank}</div>`;
+                let crownEmblem = "";
+
+                // Top 3 Custom Styling
+                if (rank === 1) {
+                    cardClass = "rank-1-card border-2 rounded-2xl p-4 flex items-center justify-between gap-4 relative overflow-hidden shadow-2xl";
+                    rankBadge = `<div class="w-10 h-10 rounded-xl bg-gold-gradient text-obsidian-950 font-black text-sm flex items-center justify-center shadow-lg shadow-gold-500/40">#1</div>`;
+                    crownEmblem = `<i class="fa-solid fa-crown text-gold-400 text-lg animate-bounce"></i>`;
+                } else if (rank === 2) {
+                    cardClass = "rank-2-card border-2 rounded-2xl p-4 flex items-center justify-between gap-4 shadow-lg";
+                    rankBadge = `<div class="w-9 h-9 rounded-xl bg-slate-200 text-slate-900 font-black text-xs flex items-center justify-center shadow">#2</div>`;
+                    crownEmblem = `<i class="fa-solid fa-medal text-slate-300 text-base"></i>`;
+                } else if (rank === 3) {
+                    cardClass = "rank-3-card border-2 rounded-2xl p-4 flex items-center justify-between gap-4 shadow-lg";
+                    rankBadge = `<div class="w-9 h-9 rounded-xl bg-amber-700 text-amber-100 font-black text-xs flex items-center justify-center shadow">#3</div>`;
+                    crownEmblem = `<i class="fa-solid fa-award text-amber-500 text-base"></i>`;
+                }
+
+                const initials = getInitials(player.name);
+
+                const cardHTML = `
+                    <div class="${cardClass}">
+                        <div class="flex items-center gap-3 sm:gap-4 min-w-0">
+                            ${rankBadge}
+                            <div class="w-11 h-11 rounded-2xl bg-gold-500/10 border border-gold-500/30 text-gold-400 font-black text-sm flex items-center justify-center flex-shrink-0">
+                                ${initials}
+                            </div>
+                            <div class="min-w-0">
+                                <div class="flex items-center gap-2">
+                                    <h3 class="font-extrabold text-white text-sm sm:text-base truncate">${player.name}</h3>
+                                    ${crownEmblem}
+                                </div>
+                                <p class="text-xs text-slate-400 truncate">${player.club} <span class="text-slate-600">•</span> <span class="text-gold-400/80 font-medium">${player.league}</span></p>
+                            </div>
+                        </div>
+                        <div class="text-right flex-shrink-0">
+                            <span class="text-base sm:text-xl font-black text-gold-400">${player.points}</span>
+                            <span class="text-[9px] text-slate-400 block uppercase font-bold tracking-wider">Poin</span>
+                        </div>
+                    </div>
+                `;
+                container.insertAdjacentHTML('beforeend', cardHTML);
+            });
+        }
+
+        // RENDER PUSKAS GRID CARDS (WITH TOP 3 SPECIAL STYLING)
+        function renderPuskasUI() {
+            const container = document.getElementById('puskasGrid');
+            container.innerHTML = '';
+
+            if (puskasData.length === 0) {
+                container.innerHTML = `
+                    <div class="col-span-full bg-obsidian-800/60 border border-slate-800/80 rounded-2xl p-8 text-center space-y-3">
+                        <div class="w-12 h-12 rounded-2xl bg-amber-500/10 border border-amber-500/20 text-amber-400 flex items-center justify-center mx-auto text-xl">
+                            <i class="fa-solid fa-award"></i>
+                        </div>
+                        <h4 class="text-sm font-bold text-white">Belum Ada Nominasi Puskas</h4>
+                        <p class="text-xs text-slate-400 max-w-sm mx-auto">Daftar gol nominasi Puskas Award masih kosong. Tambahkan gol nominasi melalui <strong class="text-amber-400">Dev Panel</strong>.</p>
+                    </div>
+                `;
+                return;
+            }
+
+            puskasData.forEach((candidate, index) => {
+                const rank = index + 1;
+                let cardClass = "bg-obsidian-800 border border-slate-800 rounded-2xl p-5 flex flex-col justify-between space-y-4 transition hover:border-slate-700";
+                let rankBadge = `<span class="text-xs font-bold text-slate-400 bg-obsidian-900 border border-slate-700 px-2.5 py-1 rounded-lg">Peringkat #${rank}</span>`;
+                let topTag = "";
+
+                if (rank === 1) {
+                    cardClass = "rank-1-card border-2 rounded-2xl p-5 flex flex-col justify-between space-y-4 shadow-2xl";
+                    topTag = `<span class="text-xs font-black text-obsidian-950 bg-gold-gradient px-3 py-1 rounded-lg shadow-md"><i class="fa-solid fa-crown mr-1"></i> #1 Leader Gol</span>`;
+                } else if (rank === 2) {
+                    cardClass = "rank-2-card border-2 rounded-2xl p-5 flex flex-col justify-between space-y-4 shadow-lg";
+                    topTag = `<span class="text-xs font-bold text-slate-900 bg-slate-300 px-2.5 py-1 rounded-lg"><i class="fa-solid fa-medal mr-1"></i> #2 Silver</span>`;
+                } else if (rank === 3) {
+                    cardClass = "rank-3-card border-2 rounded-2xl p-5 flex flex-col justify-between space-y-4 shadow-lg";
+                    topTag = `<span class="text-xs font-bold text-amber-100 bg-amber-700 px-2.5 py-1 rounded-lg"><i class="fa-solid fa-award mr-1"></i> #3 Bronze</span>`;
+                } else {
+                    topTag = rankBadge;
+                }
+
+                const initials = getInitials(candidate.name);
+
+                const cardHTML = `
+                    <div class="${cardClass}">
+                        <div class="space-y-3">
+                            <div class="flex items-center justify-between">
+                                ${topTag}
+                                <span class="text-[10px] text-slate-400 font-bold uppercase tracking-wider">${candidate.league}</span>
+                            </div>
+
+                            <div class="flex items-center gap-3">
+                                <div class="w-12 h-12 rounded-2xl bg-amber-500/10 border border-amber-500/30 text-amber-400 font-black text-sm flex items-center justify-center flex-shrink-0">
+                                    ${initials}
+                                </div>
+                                <div class="min-w-0">
+                                    <h3 class="font-extrabold text-white text-base truncate">${candidate.name}</h3>
+                                    <p class="text-xs text-gold-400 font-medium truncate">${candidate.club}</p>
+                                </div>
+                            </div>
+
+                            <div class="bg-obsidian-900/90 border border-slate-800 p-3 rounded-xl">
+                                <p class="text-xs text-slate-300 italic">"${candidate.desc || 'Gol Indah Musim 2026'}"</p>
+                            </div>
+                        </div>
+
+                        <div class="flex items-center justify-between pt-3 border-t border-slate-800/80">
+                            <div>
+                                <span class="text-lg font-black text-gold-400">${candidate.votes.toLocaleString()}</span>
+                                <span class="text-[10px] text-slate-400 block font-semibold uppercase">Total Votes</span>
+                            </div>
+
+                            <button onclick="castPuskasVote('${candidate.id}')" class="bg-gold-gradient hover:opacity-90 text-obsidian-950 font-black px-4 py-2 rounded-xl text-xs transition flex items-center gap-2 shadow-lg shadow-gold-500/20">
+                                <i class="fa-solid fa-thumbs-up"></i> Vote Gol
+                            </button>
+                        </div>
+                    </div>
+                `;
+                container.insertAdjacentHTML('beforeend', cardHTML);
+            });
+        }
+
+        // DAILY VOTE QUOTA LOGIC (3 Free Votes / Day)
+        function initDailyVoteQuota() {
+            const today = new Date().toISOString().split('T')[0];
+            const storedDate = localStorage.getItem('puskas_vote_date');
+            if (storedDate !== today) {
+                localStorage.setItem('puskas_vote_date', today);
+                localStorage.setItem('puskas_vote_quota', '3');
+            }
+            updateVoteQuotaUI();
+        }
+
+        function updateVoteQuotaUI() {
+            const quota = parseInt(localStorage.getItem('puskas_vote_quota') || '3');
+            document.getElementById('voteQuotaCount').innerText = `${quota} / 3`;
+        }
+
+        function castPuskasVote(candidateId) {
+            let quota = parseInt(localStorage.getItem('puskas_vote_quota') || '3');
+            if (quota <= 0) {
+                showToast("Jatah 3 vote harianmu sudah habis! Reset pukul 00:00 WIB.", "warning");
+                return;
+            }
+
+            quota -= 1;
+            localStorage.setItem('puskas_vote_quota', quota.toString());
+            updateVoteQuotaUI();
+
+            // Increment votes in Firebase
+            const candidate = puskasData.find(c => c.id === candidateId);
+            if (candidate) {
+                const newVotes = (candidate.votes || 0) + 1;
+                db.ref('puskas/' + candidateId + '/votes').set(newVotes);
+                showToast(`Voting berhasil! Sisa jatah hari ini: ${quota}`, "success");
+            }
+        }
+
+        // AWARD MODE SWITCHER (Ballon d'Or vs Puskas)
+        function toggleAwardMode(mode) {
+            currentAwardTab = mode;
+            const bBtn = document.getElementById('btnAwardBallondor');
+            const pBtn = document.getElementById('btnAwardPuskas');
+            const bSec = document.getElementById('sectionBallondor');
+            const pSec = document.getElementById('sectionPuskas');
+            const qBadge = document.getElementById('voteQuotaBadge');
+
+            if (mode === 'ballondor') {
+                bBtn.className = "px-4 py-2 rounded-lg text-xs font-bold transition flex items-center gap-2 text-gold-400 bg-gold-500/10 border border-gold-500/30";
+                pBtn.className = "px-4 py-2 rounded-lg text-xs font-bold transition flex items-center gap-2 text-slate-400 hover:text-white";
+                bSec.classList.remove('hidden');
+                pSec.classList.add('hidden');
+                qBadge.classList.add('hidden');
+                qBadge.classList.remove('flex');
+            } else {
+                pBtn.className = "px-4 py-2 rounded-lg text-xs font-bold transition flex items-center gap-2 text-gold-400 bg-gold-500/10 border border-gold-500/30";
+                bBtn.className = "px-4 py-2 rounded-lg text-xs font-bold transition flex items-center gap-2 text-slate-400 hover:text-white";
+                pSec.classList.remove('hidden');
+                bSec.classList.add('hidden');
+                qBadge.classList.remove('hidden');
+                qBadge.classList.add('flex');
+            }
+        }
+
+        // TAB NAVIGATION LOGIC
+        function switchTab(tabId) {
+            if (tabId === 'dev' && !isDevUnlocked) {
+                document.getElementById('pinModal').classList.remove('hidden');
+                document.getElementById('pinInput').focus();
+                return;
+            }
+
+            document.querySelectorAll('.tab-content').forEach(el => el.classList.add('hidden'));
+            document.getElementById(`tab-${tabId}`).classList.remove('hidden');
+
+            document.querySelectorAll('.nav-btn').forEach(btn => {
+                btn.className = "nav-btn flex flex-col items-center justify-center py-2 rounded-xl transition text-slate-400 hover:text-white";
+            });
+            document.getElementById(`nav-${tabId}`).className = "nav-btn flex flex-col items-center justify-center py-2 rounded-xl transition text-gold-400 bg-gold-500/10 border border-gold-500/30";
+        }
+
+        // PIN VERIFICATION FOR DEV PANEL
+        function verifyPin(e) {
+            e.preventDefault();
+            const pin = document.getElementById('pinInput').value;
+            if (pin === "Su4l4m0h") {
+                isDevUnlocked = true;
+                closePinModal();
+                switchTab('dev');
+                showToast("Akses Dev Panel Diberikan!", "success");
+            } else {
+                document.getElementById('pinErrorMsg').classList.remove('hidden');
+            }
+        }
+
+        function closePinModal() {
+            document.getElementById('pinModal').classList.add('hidden');
+            document.getElementById('pinErrorMsg').classList.add('hidden');
+            document.getElementById('pinInput').value = '';
+        }
+
+        function lockDevPanel() {
+            isDevUnlocked = false;
+            switchTab('klasemen');
+            showToast("Dev Panel Terkunci Kembali.", "info");
+        }
+
+        // ADD NEW PLAYER / CANDIDATE (FORM)
+        function handleAddPlayer(e) {
+            e.preventDefault();
+            const cat = document.getElementById('formCategory').value;
+            const name = document.getElementById('formName').value.trim();
+            const league = document.getElementById('formLeague').value;
+            const club = document.getElementById('formClub').value;
+            const desc = document.getElementById('formGoalDesc').value.trim();
+
+            if (!name) return;
+
+            const newId = (cat === 'ballondor' ? 'b_' : 'p_') + Date.now();
+
+            if (cat === 'ballondor') {
+                const newPlayer = { id: newId, name, league, club, points: 0 };
+                db.ref('ballondor/' + newId).set(newPlayer);
+                showToast(`Pemain Ballon d'Or ${name} Berhasil Ditambahkan!`, "success");
+            } else {
+                const newCandidate = { id: newId, name, league, club, desc: desc || "Gol Indah Musim 2026", votes: 0 };
+                db.ref('puskas/' + newId).set(newCandidate);
+                showToast(`Nominasi Puskas ${name} Berhasil Ditambahkan!`, "success");
+            }
+
+            document.getElementById('formName').value = '';
+            document.getElementById('formGoalDesc').value = '';
+        }
+
+        // DEV PANEL EDITING TABLE & REAL-TIME SEARCH
+        function renderDevTable() {
+            const tbody = document.getElementById('devTableBody');
+            if (!tbody) return;
+            
+            const searchQuery = (document.getElementById('devSearchInput')?.value || '').toLowerCase();
+            tbody.innerHTML = '';
+
+            // Combine both data sets
+            const allItems = [
+                ...ballondorData.map(item => ({ ...item, category: 'Ballon d\'Or', type: 'ballondor' })),
+                ...puskasData.map(item => ({ ...item, category: 'Puskas Award', type: 'puskas' }))
+            ];
+
+            const filteredItems = allItems.filter(item => 
+                item.name.toLowerCase().includes(searchQuery) ||
+                item.club.toLowerCase().includes(searchQuery) ||
+                item.league.toLowerCase().includes(searchQuery)
+            );
+
+            if (filteredItems.length === 0) {
+                tbody.innerHTML = `<tr><td colspan="4" class="p-6 text-center text-slate-500 font-semibold">Tidak ada pemain. Tambahkan pemain baru melalui form di atas.</td></tr>`;
+                return;
+            }
+
+            filteredItems.forEach(item => {
+                const scoreValue = item.type === 'ballondor' ? item.points : item.votes;
+                const scoreUnit = item.type === 'ballondor' ? 'Poin' : 'Votes';
+                const badgeColor = item.type === 'ballondor' ? 'bg-gold-500/10 text-gold-400 border-gold-500/30' : 'bg-amber-500/10 text-amber-400 border-amber-500/30';
+                const escapedName = item.name.replace(/'/g, "\\'");
+
+                const tr = `
+                    <tr class="hover:bg-obsidian-900/50 transition">
+                        <td class="p-3">
+                            <span class="px-2.5 py-1 rounded-lg text-[10px] font-extrabold border ${badgeColor}">
+                                ${item.category}
+                            </span>
+                        </td>
+                        <td class="p-3">
+                            <div class="font-extrabold text-white">${item.name}</div>
+                            <div class="text-[11px] text-slate-400">${item.club} (${item.league})</div>
+                        </td>
+                        <td class="p-3 text-center">
+                            <span class="text-sm font-black text-gold-400">${scoreValue.toLocaleString()}</span>
+                            <span class="text-[10px] text-slate-500 block font-semibold">${scoreUnit}</span>
+                        </td>
+                        <td class="p-3 text-center">
+                            <div class="flex items-center justify-center gap-1.5 flex-wrap">
+                                ${item.type === 'ballondor' ? `
+                                    <button onclick="adjustScore('${item.type}', '${item.id}', -1)" class="bg-obsidian-800 hover:bg-slate-700 text-slate-300 font-bold px-2 py-1 rounded-lg border border-slate-700 text-xs">-1</button>
+                                    <button onclick="adjustScore('${item.type}', '${item.id}', 1)" class="bg-obsidian-800 hover:bg-slate-700 text-gold-400 font-bold px-2 py-1 rounded-lg border border-slate-700 text-xs">+1</button>
+                                    <button onclick="adjustScore('${item.type}', '${item.id}', 10)" class="bg-gold-500/20 hover:bg-gold-500/30 text-gold-300 font-bold px-2 py-1 rounded-lg border border-gold-500/30 text-xs">+10</button>
+                                ` : `
+                                    <button onclick="adjustScore('${item.type}', '${item.id}', -10)" class="bg-obsidian-800 hover:bg-slate-700 text-slate-300 font-bold px-2 py-1 rounded-lg border border-slate-700 text-xs">-10</button>
+                                    <button onclick="adjustScore('${item.type}', '${item.id}', 10)" class="bg-obsidian-800 hover:bg-slate-700 text-amber-400 font-bold px-2 py-1 rounded-lg border border-slate-700 text-xs">+10</button>
+                                    <button onclick="adjustScore('${item.type}', '${item.id}', 100)" class="bg-amber-500/20 hover:bg-amber-500/30 text-amber-300 font-bold px-2 py-1 rounded-lg border border-amber-500/30 text-xs">+100</button>
+                                `}
+                                <button onclick="openEditScoreModal('${item.type}', '${item.id}', ${scoreValue})" class="bg-blue-950 hover:bg-blue-900 text-blue-400 font-bold px-2.5 py-1 rounded-lg border border-blue-500/30 text-xs">
+                                    <i class="fa-solid fa-pen-to-square"></i>
+                                </button>
+                                <button onclick="openDeleteModal('${item.type}', '${item.id}', '${escapedName}')" class="bg-red-950 hover:bg-red-900 text-red-400 font-bold px-2.5 py-1 rounded-lg border border-red-500/30 text-xs">
+                                    <i class="fa-solid fa-trash-can"></i>
+                                </button>
+                            </div>
+                        </td>
+                    </tr>
+                `;
+                tbody.insertAdjacentHTML('beforeend', tr);
+            });
+        }
+
+        function filterDevTable() {
+            renderDevTable();
+        }
+
+        // ADJUST SCORE IN FIREBASE
+        function adjustScore(type, id, delta) {
+            const refPath = `${type}/${id}/${type === 'ballondor' ? 'points' : 'votes'}`;
+            db.ref(refPath).transaction(currentVal => {
+                const newVal = (currentVal || 0) + delta;
+                return newVal < 0 ? 0 : newVal;
+            });
+            showToast(`Poin/Vote berhasil diperbarui!`, "success");
+        }
+
+        // CUSTOM MODALS FOR EDIT SCORE & DELETE PLAYER
+        function openEditScoreModal(type, id, currentVal) {
+            editTarget = { type, id, currentVal };
+            document.getElementById('editScoreInput').value = currentVal;
+            document.getElementById('editScoreModalTitle').innerText = `Edit ${type === 'ballondor' ? "Poin Ballon d'Or" : "Vote Puskas"}`;
+            document.getElementById('editScoreModal').classList.remove('hidden');
+            document.getElementById('editScoreInput').focus();
+        }
+
+        function closeEditScoreModal() {
+            editTarget = { type: null, id: null, currentVal: 0 };
+            document.getElementById('editScoreModal').classList.add('hidden');
+        }
+
+        function confirmEditScore(e) {
+            e.preventDefault();
+            if (!editTarget.id || !editTarget.type) return;
+            const newVal = parseInt(document.getElementById('editScoreInput').value);
+            if (isNaN(newVal) || newVal < 0) {
+                showToast("Masukkan angka poin/vote yang valid!", "warning");
+                return;
+            }
+            const refPath = `${editTarget.type}/${editTarget.id}/${editTarget.type === 'ballondor' ? 'points' : 'votes'}`;
+            db.ref(refPath).set(newVal)
+                .then(() => {
+                    showToast(`Nilai berhasil diubah menjadi ${newVal.toLocaleString()}`, "success");
+                    closeEditScoreModal();
+                })
+                .catch(err => {
+                    showToast(`Gagal mengubah nilai: ${err.message}`, "warning");
+                    closeEditScoreModal();
+                });
+        }
+
+        function openDeleteModal(type, id, name) {
+            deleteTarget = { type, id, name };
+            document.getElementById('deleteConfirmText').innerText = `Apakah Anda yakin ingin menghapus "${name}" dari ${type === 'ballondor' ? "Ballon d'Or" : "Puskas Award"}?`;
+            document.getElementById('deleteModal').classList.remove('hidden');
+        }
+
+        function closeDeleteModal() {
+            deleteTarget = { type: null, id: null, name: null };
+            document.getElementById('deleteModal').classList.add('hidden');
+        }
+
+        function confirmDeletePlayer() {
+            if (!deleteTarget.id || !deleteTarget.type) return;
+            const { type, id, name } = deleteTarget;
+            db.ref(`${type}/${id}`).remove()
+                .then(() => {
+                    showToast(`Data "${name}" berhasil dihapus.`, "info");
+                    closeDeleteModal();
+                })
+                .catch(err => {
+                    showToast(`Gagal menghapus data: ${err.message}`, "warning");
+                    closeDeleteModal();
+                });
+        }
+
+        // NOTIFICATION TOAST FUNCTION
+        function showToast(msg, type = "info") {
+            const toast = document.getElementById('toast');
+            const icon = document.getElementById('toastIcon');
+            const msgEl = document.getElementById('toastMsg');
+
+            msgEl.innerText = msg;
+
+            if (type === "success") {
+                icon.className = "fa-solid fa-circle-check text-emerald-400";
+            } else if (type === "warning") {
+                icon.className = "fa-solid fa-triangle-exclamation text-amber-400";
+            } else {
+                icon.className = "fa-solid fa-circle-info text-gold-400";
+            }
+
+            toast.classList.remove('opacity-0', 'pointer-events-none');
+            setTimeout(() => {
+                toast.classList.add('opacity-0', 'pointer-events-none');
+            }, 3000);
+        }
+    </script>
+</body>
+</html>
